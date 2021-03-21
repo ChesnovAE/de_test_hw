@@ -12,6 +12,75 @@ def _get_last_nonnull_id(*osm_ids):
             return osm_id
 _last_nonnull_udf = F.udf(lambda osm_ids: _get_last_nonnull_id(*osm_ids), StringType())        
 
+
+def process_scd2(ndata, sdata):
+    ndata = ndata.withColumnRenamed('Osm_id', 'new_Osm_id') \
+        .withColumnRenamed('Par_osm_id', 'new_Par_osm_id') \
+        .withColumnRenamed('Name', 'new_Name') \
+        .withColumnRenamed('Level', 'new_Level') \
+        .withColumnRenamed('val_to', 'new_val_to') \
+        .withColumnRenamed('val_from', 'new_val_from')
+    
+    merged = ndata.join(sdata, sdata.Osm_id == ndata.new_Osm_id, how='fullouter')
+
+    merged = merged.withColumn(
+        'action', 
+        F.when(merged.new_Osm_id.isNull(), 'keepold')
+        .when(merged.Osm_id.isNull(), 'insertnew')
+        .when(merged.new_Level != merged.Level, 'update')
+        .otherwise('noaction')
+    )
+
+    columns = ['Osm_id', 'Par_osm_id', 'Name', 'Level', 'val_to', 'val_from']
+
+    # process noaction
+    df_noact = merged.filter('action="noaction"').select(columns)
+
+    # process keepold
+    df_keep = merged.filter('action="keepold"').select(
+        merged.Osm_id,
+        merged.Par_osm_id,
+        merged.Name,
+        merged.Level,
+        merged.val_to,
+        merged.val_from
+    )
+
+    # process insertnew
+    df_new = merged.filter('action="insertnew"').select(
+        merged.new_Osm_id.alias('Osm_id'),
+        merged.new_Par_osm_id.alias('Par_osm_id'),
+        merged.new_Name.alias('Name'),
+        merged.new_Level.alias('Level'),
+        merged.new_val_to.alias('val_to'),
+        merged.new_val_from.alias('val_from')
+    )
+
+    # process update
+    df_upd = merged.filter('action="update"')
+
+    df_upd_old = df_upd.select(
+        df_upd.Osm_id,
+        df_upd.Par_osm_id,
+        df_upd.Name,
+        df_upd.Level,
+        df_upd.val_to,
+        df_upd.new_val_to.alias('val_from')
+    )
+
+    df_upd_new = df_upd.select(
+        df_upd.new_Osm_id.alias('Osm_id'),
+        df_upd.new_Par_osm_id.alias('Par_osm_id'),
+        df_upd.new_Name.alias('Name'),
+        df_upd.new_Level.alias('Level'),
+        df_upd.new_val_to.alias('val_to'),
+        df_upd.new_val_from.alias('val_from')
+    )
+
+    full_merged = df_noact.unionAll(df_keep).unionAll(df_new).unionAll(df_upd_old).unionAll(df_upd_new)
+    return full_merged
+
+
 class SparkLoader:
     def __init__(self, memory=2, cores=2, driver_memory=2, app_name='osm'):
         self._memory = memory
@@ -69,3 +138,6 @@ class SparkLoader:
                  password='docker',
                  driver='org.postgresql.Driver'
         ).load()
+
+    def stop(self):
+        self._session.stop()

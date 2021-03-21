@@ -4,7 +4,7 @@ import shutil
 import logging
 import argparse
 
-from utils import SparkLoader
+from utils import SparkLoader, process_scd2
 
 
 def main():
@@ -29,11 +29,25 @@ def process(args):
             df = loader.process_csv_data(file)
         else:
             df = df.union(loader.process_csv_data(file))
+    
+    old_data = loader.session.read.format("jdbc"). \
+    options(
+         url='jdbc:postgresql://localhost:5454/',
+         dbtable='test',
+         user='postgres',
+         password='docker',
+         driver='org.postgresql.Driver'
+    ).load()
+    
+    df = process_scd2(df, old_data)
+
     logging.info('Write processed data to parquet file')
     loader.write_data(df)
     
     logging.info('Write processed data to database')
     loader.write2dbase(df, table=args.table)
+    
+    loader.stop()
 
 
 def setup_parser(parser):

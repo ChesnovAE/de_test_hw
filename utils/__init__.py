@@ -1,3 +1,3 @@
-from ._loader import SparkLoader
+from ._loader import SparkLoader, process_scd2
 
-__all__ = ['SparkLoader']
+__all__ = ['SparkLoader', 'process_scd2']

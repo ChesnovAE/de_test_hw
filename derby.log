@@ -1,7 +1,7 @@
 ----------------------------------------------------------------
-Sun Mar 21 06:31:07 MSK 2021:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0178-52d6-1efa-00000784db80 
-on database directory /home/ripper/задача для DE/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2fe09604 
+Sun Mar 21 08:45:45 MSK 2021:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0178-5351-6001-00000c0f8ba8 
+on database directory /home/ripper/задача для DE/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@8d1c4ae 
 Loaded from file:/home/ripper/spark-3.1.1-bin-hadoop2.7/jars/derby-10.12.1.1.jar
 java.vendor=Private Build
 java.runtime.version=1.8.0_282-8u282-b08-0ubuntu1~20.04-b08
